@@ -9,6 +9,7 @@ def get(name,
         version=None,
         suffix='.jar',
         to=None,
+        unzipTo=None,
         **kwargs):
     '''
     Get latest artifact from Maven repository
@@ -72,7 +73,7 @@ def get(name,
         ret['comment'] = 'Artifact from {} is already in file {}'.format(urlToLoad, saveTo)
         return ret
 
-    #Test mode
+    # Test mode
     if __opts__['test'] == True:
         ret['comment'] = 'The state of "{0}" will be changed.'.format(name)
         if current_state is None:
@@ -95,9 +96,18 @@ def get(name,
         ret['comment'] = 'Failed to downlad artifact: {}'.format(fileReturn['comment'])
         return ret
 
-    #new_state = __salt__['maven.change_state'](name, {'urlToLoad':urlToLoad, 'saveTo':saveTo})
+    if(unzipTo is not None):
+        unzipTo = os.path.expandvars(unzipTo)
+        unzipResult = __salt__['archive.unzip'](zip_file=saveTo,dest=unzipTo)
+        if(unzipResult == False):
+            ret['result'] == False
+            ret['comment'] == unzipResult['comment']
+            return ret
+        ret['comment'] = 'The state of "{0}" was changed! {1} is loaded to {2}, unzipped to {3}'.format(name, urlToLoad, saveTo, unzipTo)
+    else:
+        ret['comment'] = 'The state of "{0}" was changed! {1} is loaded to {2}'.format(name, urlToLoad, saveTo)
+    # new_state = __salt__['maven.change_state'](name, {'urlToLoad':urlToLoad, 'saveTo':saveTo})
     new_state = __salt__['data.update'](urlToLoad, saveTo)
-    ret['comment'] = 'The state of "{0}" was changed! {1} is loaded to {2}'.format(name, urlToLoad, saveTo)
     if current_state is None:
         ret['changes'] = {
             'old': {},
@@ -129,11 +139,11 @@ def _getLatestVersion(groupUrl, artifactId):
     print response.content
     root = ElementTree.XML(response.content)
     release = root.find("versioning/release")
-    if release is None: #SNAPSHOT
+    if release is None: # SNAPSHOT
         latestSnapshot = root.find("versioning/versions/version[last()]")
         print 'Latest snapshot: {}'.format(latestSnapshot.text)
         return latestSnapshot.text
-    else: #RELEASE
+    else: # RELEASE
         return release.text
 
 
@@ -144,10 +154,10 @@ def _getArtifactUrl(repoUrl, groupId, artifactId, version, suffix):
     groupUrl = _getGroupUrl(repoUrl, groupId)
     if version is None:
         version = _getLatestVersion(groupUrl, artifactId)
-    if version.endswith('-SNAPSHOT'): #SNAPSHOT
+    if version.endswith('-SNAPSHOT'): # SNAPSHOT
         snapshotUrl = _getLastSnapshot(groupUrl, version, artifactId, suffix)
         return snapshotUrl
-    else: #RELEASE
+    else: # RELEASE
         releaseUrl = '{}/{}/{}/{}-{}{}'.format(groupUrl, artifactId, version, artifactId, version, suffix)
         return releaseUrl
 
@@ -162,4 +172,4 @@ def _getLastSnapshot(groupUrl, version, artifactId, suffix):
     snapshotVersion = version.replace('SNAPSHOT', marker)
     return '{}/{}/{}/{}-{}{}'.format(groupUrl, artifactId, version, artifactId, snapshotVersion, suffix)
 
-#get('/etc/temp/link.jar', repoUrl='https://repo.1capp.com/nexus/content/repositories/snapshots/', groupId='com.company1c.rap', artifactId='com.company1c.rap.product')
+# get('/etc/temp/link.jar', repoUrl='https://repo.1capp.com/nexus/content/repositories/snapshots/', groupId='com.company1c.rap', artifactId='com.company1c.rap.product')
