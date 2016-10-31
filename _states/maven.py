@@ -3,7 +3,7 @@ import os
 from xml.etree import ElementTree
 
 def get(name,
-        repoUrl='https://repo1.maven.org/maven2/', 
+        repoUrl='https://repo1.maven.org/maven2/',
         groupId=None,
         artifactId=None,
         version=None,
@@ -14,7 +14,7 @@ def get(name,
     Get latest artifact from Maven repository
 
     name:
-        The location of the file to save Maven artifact    
+        The location of the file to save Maven artifact
     repoUrl : https://repo1.maven.org/maven2/
         repository url
     groupId
@@ -22,7 +22,7 @@ def get(name,
     artifactId
         ID of the artifact
     version
-        Optional. Version of artifact, otherwise latest. 
+        Optional. Version of artifact, otherwise latest.
     suffix : `.jar`
         artifact suffix (.jar, .tar.gz, .zip or yours)
     to:
@@ -35,12 +35,12 @@ def get(name,
         'comment': '',
         'pchanges': {},
         }
-    
+
     mvnkwargs = {}
-    
+
     for kwarg in kwargs.keys():
-        mvnkwargs[kwarg] = kwargs[kwarg]       
-    
+        mvnkwargs[kwarg] = kwargs[kwarg]
+
     if groupId is None:
         ret['result'] = False
         ret['comment'] = 'groupId MUST be specified in salt.state.maven'
@@ -48,15 +48,16 @@ def get(name,
     if artifactId is None:
         ret['result'] = False
         ret['comment'] = 'artifactId MUST be specified in salt.state.maven'
-    
+
     if version is None:
         groupUrl = _getGroupUrl(repoUrl, groupId)
         version = _getLatestVersion( groupUrl , artifactId)
-    
+
     saveTo = ''
     if (to is None) or (to == ''):
-        saveTo = name
+        saveTo = os.path.expandvars(name)
     else:
+        to = os.path.expandvars(to)
         if os.path.isdir(to) == False:
             ret['comment'] = 'Specified TO target {0} is not a directory'.format(to)
             ret['result'] = False
@@ -85,7 +86,7 @@ def get(name,
         ## Return ``None`` when running with ``test=true``.
         ret['result'] = None
         return ret
-    
+
     # Finally, make the actual change and return the result.
     fileReturn = __states__['file.managed'](name=saveTo, source=urlToLoad, source_hash='{}.md5'.format(urlToLoad))
     if fileReturn['result'] == False:
@@ -93,8 +94,8 @@ def get(name,
         #raise salt.exceptions.SaltInvocationError('Failed to downlad artifact: {}'.format(fileReturn['comment']))
         ret['comment'] = 'Failed to downlad artifact: {}'.format(fileReturn['comment'])
         return ret
-    
-    #new_state = __salt__['maven.change_state'](name, {'urlToLoad':urlToLoad, 'saveTo':saveTo})    
+
+    #new_state = __salt__['maven.change_state'](name, {'urlToLoad':urlToLoad, 'saveTo':saveTo})
     new_state = __salt__['data.update'](urlToLoad, saveTo)
     ret['comment'] = 'The state of "{0}" was changed! {1} is loaded to {2}'.format(name, urlToLoad, saveTo)
     if current_state is None:
@@ -118,7 +119,7 @@ def _getLatestVersion(groupUrl, artifactId):
     Checks if artifact is snaphsot
     Keyword arguments:
     url -- artifacts URL in Maven repository
-    
+
     Returns:
         latest version, as string
     '''
