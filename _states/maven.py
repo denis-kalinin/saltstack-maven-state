@@ -47,11 +47,11 @@ def get(name,
     for kwarg in kwargs.keys():
         mvnkwargs[kwarg] = kwargs[kwarg]
 
-    if groupId is None:
+    if group_id is None:
         ret['result'] = False
         ret['comment'] = '"group_id" MUST be specified in salt.state.maven'
 
-    if artifactId is None:
+    if artifact_id is None:
         ret['result'] = False
         ret['comment'] = '"artifact_id" MUST be specified in salt.state.maven'
 
