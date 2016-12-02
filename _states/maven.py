@@ -58,7 +58,7 @@ def get(name,
     if version is None:
         version = _get_latest_version( repo_url, group_id , artifact_id)
 
-    save_as = mvnkwargs['save_to']
+    save_as = mvnkwargs['save_as']
     if save_as is None or len(save_as) == 0:
         if save_to is None or len(save_to) == 0:
             save_to = name
