@@ -1,33 +1,38 @@
 import requests
 import os
+import re
 from xml.etree import ElementTree
 
 def get(name,
-        repoUrl='https://repo1.maven.org/maven2/',
-        groupId=None,
-        artifactId=None,
+        repo_url='https://repo1.maven.org/maven2/',
+        group_id=None,
+        artifact_id=None,
         version=None,
-        suffix='.jar',
-        to=None,
-        unzipTo=None,
+        classifier='',
+        artifact_type='jar',
+        save_to=None,
         **kwargs):
     '''
     Get latest artifact from Maven repository
 
     name:
         The location of the file to save Maven artifact
-    repoUrl : https://repo1.maven.org/maven2/
+    repo_url : https://repo1.maven.org/maven2/
         repository url
-    groupId
+    group_id
         group of the artifactId
-    artifactId
+    artifact_id
         ID of the artifact
     version
         Optional. Version of artifact, otherwise latest.
-    suffix : `.jar`
-        artifact suffix (.jar, .tar.gz, .zip or yours)
-    to:
-        Optional. Directory to save the artifact to. If defined `name` is ignored.
+    classifier
+        Optional. Artifact's classifier
+    artifact_type : jar
+        Optional. Artifact type (file extension) - default is `jar`.
+    save_to:
+        Optional. Directory to save the artifact to. If defined then `name` is ignored.
+    save_as:
+        Optional. Saves artifact as a specified file. Overrides `save_to`.
     '''
     ret = {
         'name': name,
@@ -44,87 +49,75 @@ def get(name,
 
     if groupId is None:
         ret['result'] = False
-        ret['comment'] = 'groupId MUST be specified in salt.state.maven'
+        ret['comment'] = '"group_id" MUST be specified in salt.state.maven'
 
     if artifactId is None:
         ret['result'] = False
-        ret['comment'] = 'artifactId MUST be specified in salt.state.maven'
+        ret['comment'] = '"artifact_id" MUST be specified in salt.state.maven'
 
     if version is None:
-        groupUrl = _getGroupUrl(repoUrl, groupId)
-        version = _getLatestVersion( groupUrl , artifactId)
+        version = _get_latest_version( repo_url, group_id , artifact_id)
 
-    saveTo = ''
-    if (to is None) or (to == ''):
-        saveTo = os.path.expandvars(name)
-    else:
-        to = os.path.expandvars(to)
-        if os.path.isdir(to) == False:
-            ret['comment'] = 'Specified TO target {0} is not a directory'.format(to)
-            ret['result'] = False
-            return ret
-        saveTo =  '{}/{}-{}{}'.format(to.rstrip('/'), artifactId, version, suffix)
+    save_as = mvnkwargs['save_to']
+    if save_as is None or len(save_as) == 0:
+        if save_to is None or len(save_to) == 0:
+            save_to = name
+        #if os.path.isdir(save_to) == False:
+        #    ret['comment'] = '"save_to" : {} - is not a valid directory'.format(save_to)
+        #    ret['result'] = False
+        #    return ret
+        save_as =  '{}/{}.{}'.format(save_to.rstrip('/'), artifact_id, artifact_type)
 
-    urlToLoad = _getArtifactUrl(repoUrl, groupId, artifactId, version, suffix)
-    current_state = __salt__['data.get'](urlToLoad)
-    saveToExists = __salt__['file.file_exists'](saveTo)
-    if current_state == saveTo and saveToExists == True:
+
+    artifact_url = _get_artifact_url(repo_url, group_id, artifact_id, version, classifier, artifact_type)
+    current_state = __salt__['data.get'](artifact_url)
+    #artifact_is_already_downloaded = __salt__['file.file_exists'](save_to)
+    if current_state == save_as and __salt__['file.file_exists'](save_as) == True:
+        # add md5 check...
         ret['result'] = True
-        ret['comment'] = 'Artifact from {} is already in file {}'.format(urlToLoad, saveTo)
+        ret['comment'] = 'Artifact from {} is already saved in file {}'.format(artifact_url, save_as)
         return ret
 
-    # Test mode
+    #Test mode
     if __opts__['test'] == True:
         ret['comment'] = 'The state of "{0}" will be changed.'.format(name)
         if current_state is None:
-            oldVal = {}
+            old_state = {}
         else:
-            oldVal = {'urlToLoad':urlToLoad, 'saveTo':current_state}
+            old_state = {'artifact_url':artifact_url, 'save_as':current_state}
         ret['pchanges'] = {
-            'old': oldVal,
-            'new': {'urlToLoad':urlToLoad, 'saveTo':saveTo}
+            'old': old_state,
+            'new': {'artifact_url':artifact_url, 'save_as':save_as}
         }
         ## Return ``None`` when running with ``test=true``.
         ret['result'] = None
         return ret
 
     # Finally, make the actual change and return the result.
-    fileReturn = __states__['file.managed'](name=saveTo, source=urlToLoad, source_hash='{}.md5'.format(urlToLoad))
-    if fileReturn['result'] == False:
+    artifact_file_operation = __states__['file.managed'](name=save_as, source=artifact_url, source_hash='{}.md5'.format(artifact_url))
+    if artifact_file_operation['result'] == False:
         ret['result'] = False
         #raise salt.exceptions.SaltInvocationError('Failed to downlad artifact: {}'.format(fileReturn['comment']))
-        ret['comment'] = 'Failed to downlad artifact: {}'.format(fileReturn['comment'])
+        ret['comment'] = 'Failed to downlad artifact: {}'.format(artifact_file_operation['comment'])
         return ret
 
-    if(unzipTo is not None):
-        unzipTo = os.path.expandvars(unzipTo)
-        unzipResult = __salt__['archive.unzip'](zip_file=saveTo,dest=unzipTo)
-        if(unzipResult == False):
-            ret['result'] == False
-            ret['comment'] == unzipResult['comment']
-            return ret
-        ret['comment'] = 'The state of "{0}" was changed! {1} is loaded to {2}, unzipped to {3}'.format(name, urlToLoad, saveTo, unzipTo)
-    else:
-        ret['comment'] = 'The state of "{0}" was changed! {1} is loaded to {2}'.format(name, urlToLoad, saveTo)
-    # new_state = __salt__['maven.change_state'](name, {'urlToLoad':urlToLoad, 'saveTo':saveTo})
-    new_state = __salt__['data.update'](urlToLoad, saveTo)
+    #new_state = __salt__['maven.change_state'](name, {'urlToLoad':urlToLoad, 'saveTo':saveTo})
+    new_state = __salt__['data.update'](artifact_url, save_as)
+    ret['comment'] = 'The state of "{0}" was changed! {1} is loaded to {2}'.format(name, artifact_url, save_as)
     if current_state is None:
         ret['changes'] = {
             'old': {},
-            'new': {'urlToLoad': urlToLoad, 'saveTo': saveTo, 'fileResult': fileReturn['changes']}
+            'new': {'artifact_url': artifact_url, 'save_as': save_as, 'artifact_file_operation': artifact_file_operation['changes']}
         }
     else:
         ret['changes'] = {
-            'old': {'urlToLoad': urlToLoad, 'saveTo': current_state},
-            'new': {'urlToLoad': urlToLoad, 'saveTo': saveTo, 'fileResult': fileReturn['changes']}
+            'old': {'artifact_url': artifact_url, 'save_as': current_state},
+            'new': {'artifact_url': artifact_url, 'save_as': save_as, 'artifact_file_operation': artifact_file_operation['changes']}
         }
     ret['result'] = True
     return ret
 
-def _getGroupUrl(repoUrl, groupId):
-    return '{}/{}'.format(repoUrl.rstrip('/'),  groupId.replace('.','/'))
-
-def _getLatestVersion(groupUrl, artifactId):
+def _get_latest_version(repo_url, group_id, artifact_id):
     '''
     Checks if artifact is snaphsot
     Keyword arguments:
@@ -133,43 +126,125 @@ def _getLatestVersion(groupUrl, artifactId):
     Returns:
         latest version, as string
     '''
-    url = '{}/{}/maven-metadata.xml'.format(groupUrl, artifactId)
-    print url
+    url = '{}/{}/{}/maven-metadata.xml'.format(
+        repo_url.rstrip('/'),
+        group_id.replace('.','/'),
+        artifact_id
+    )
+    print('Artifact metadata: {}'.format(url))
     response = requests.get(url)
-    print response.content
+    print(response.content)
     root = ElementTree.XML(response.content)
-    release = root.find("versioning/release")
-    if release is None: # SNAPSHOT
-        latestSnapshot = root.find("versioning/versions/version[last()]")
-        print 'Latest snapshot: {}'.format(latestSnapshot.text)
-        return latestSnapshot.text
-    else: # RELEASE
-        return release.text
+    greatest_version = root.find('versioning/versions/version[last()]')
+    return greatest_version.text
 
+def _get_versions(repo_url, group_id, artifact_id):
+    url = '{}/{}/{}/maven-metadata.xml'.format(
+        repo_url.rstrip('/'),
+        group_id.replace('.','/'),
+        artifact_id
+    )
+    print('Artifact metadata: {}'.format(url))
+    response = requests.get(url)
+    print(response.content)
+    version_elements = ElementTree.XML(response.content).findall('versioning/versions/version')
+    return [ i.text for i in version_elements ]
 
-def _getArtifactUrl(repoUrl, groupId, artifactId, version, suffix):
+def _get_artifact_url(repo_url,
+                      group_id,
+                      artifact_id,
+                      version,
+                      classifier,
+                      artifact_type):
     '''
     Gets URL to the latest artifact
+
+    Returns:
+        URL to get artifact
     '''
-    groupUrl = _getGroupUrl(repoUrl, groupId)
+    if version is not None:
+        possible_range = version
+        version = _normalize_version(repo_url, group_id, artifact_id, version)
+        if version is None:
+            raise ValueError('Nothing is found in the range {}'.format(possible_range))
+
     if version is None:
-        version = _getLatestVersion(groupUrl, artifactId)
-    if version.endswith('-SNAPSHOT'): # SNAPSHOT
-        snapshotUrl = _getLastSnapshot(groupUrl, version, artifactId, suffix)
-        return snapshotUrl
-    else: # RELEASE
-        releaseUrl = '{}/{}/{}/{}-{}{}'.format(groupUrl, artifactId, version, artifactId, version, suffix)
-        return releaseUrl
+        version = _get_latest_version(repo_url, group_id, artifact_id)
+    if version.endswith('-SNAPSHOT'):
+        return _get_last_snapshot(repo_url, group_id, version, artifact_id, classifier, artifact_type)
+    else:
+        group_url = '{}/{}'.format(repo_url.rstrip('/'),  group_id.replace('.','/'))
+        return '{}/{}/{}/{}-{}{}.{}'.format(group_url, artifact_id, version, artifact_id, version, classifier, artifact_type)
 
 
-def _getLastSnapshot(groupUrl, version, artifactId, suffix):
-    versionMetadataUrl = '{}/{}/{}/maven-metadata.xml'.format(groupUrl, artifactId, version)
-    response = requests.get(versionMetadataUrl)
+def _get_last_snapshot(repo_url, group_id, version, artifact_id, classifier, artifact_type):
+    group_url = '{}/{}'.format(repo_url.rstrip('/'),  group_id.replace('.','/'))
+    version_metadata_url = '{}/{}/{}/maven-metadata.xml'.format(group_url, artifact_id, version)
+    response = requests.get(version_metadata_url)
+    print response.content
     root = ElementTree.XML(response.content)
-    timestamp = root.find("versioning/snapshot/timestamp")
+    timestamp = root.find('versioning/snapshot/timestamp')
     buildnumber = root.find('versioning/snapshot/buildNumber')
     marker = '{}-{}'.format(timestamp.text, buildnumber.text)
-    snapshotVersion = version.replace('SNAPSHOT', marker)
-    return '{}/{}/{}/{}-{}{}'.format(groupUrl, artifactId, version, artifactId, snapshotVersion, suffix)
+    snapshot_version = version.replace('SNAPSHOT', marker)
+    return '{}/{}/{}/{}-{}{}.{}'.format(group_url, artifact_id, version, artifact_id, snapshot_version, classifier, artifact_type)
 
-# get('/etc/temp/link.jar', repoUrl='https://repo.1capp.com/nexus/content/repositories/snapshots/', groupId='com.company1c.rap', artifactId='com.company1c.rap.product')
+def _normalize_version(repo_url, group_id, artifact_id,version):
+    if(version is None):
+        return None
+    # https://regex101.com/r/O5WKkh/2
+    p = re.compile(r'^(?P<lbrace>\(|\[)\s*(?P<from>(\d+(?:\.\d+){0,2})(?:-\w*)?)?\s*,\s*(?P<to>(\d+(?:\.\d+){0,2})(?:-\w*)?)?\s*(?P<rbrace>\)|\])$')
+    match = re.match(p, version)
+    if(match is None):
+        return version
+    versions = _get_versions(repo_url, group_id, artifact_id)
+    version_set = set()
+    p2 = re.compile(r'^(?P<major>\d+)(?:\.(?P<minor>\d+)(?:\.(?P<micro>\d+))?)?(?:-(?P<qualifier>\w+))?$')
+    for v in versions:
+        tuple_version = _split_version_string(v, p2)
+        if tuple_version is not None:
+            version_set.add(tuple_version)
+    start_version = _split_version_string(match.group('from'), p2)
+    maven_set = sorted(version_set, key=lambda tup: (tup[0], tup[1], tup[2], tup[3]))
+    print(maven_set)
+    if start_version is not None:
+        just_bigger = True if match.group('lbrace') == '(' else False
+        for mv in maven_set[:]:
+            if mv < start_version:
+                print('remove [', mv)
+                maven_set.remove(mv)
+            elif mv == start_version and just_bigger:
+                print('remove (', mv)
+                maven_set.remove(mv)
+    end_version = _split_version_string(match.group('to'), p2)
+    if end_version is not None:
+        just_smaller = True if match.group('rbrace') == ')' else False
+        for mv in maven_set[:]:
+            if mv > end_version:
+                print('remove ]', mv)
+                maven_set.remove(mv)
+            elif mv == end_version and just_smaller:
+                print('remove )', mv)
+                maven_set.remove(mv)
+    try:
+        v_tup = maven_set[-1]
+        qualifier = v_tup[3]
+        qualifier = '-{}'.format(qualifier) if qualifier is not None else ''
+        return '{}.{}.{}{}'.format(v_tup[0], v_tup[1], v_tup[2], qualifier)
+    except IndexError:
+        return None
+
+def _split_version_string(version, pattern):
+    if version is not None:
+        match = re.match(pattern, version)
+        if match is not None:
+            major = match.group('major')
+            minor = match.group('minor')
+            minor = 0 if minor is None else minor
+            micro = match.group('micro')
+            micro = 0 if micro is None else micro
+            qualifier = match.group('qualifier')
+            tuple_arr = map(int, [major, minor, micro])
+            tuple_arr.append(qualifier)
+            return tuple(tuple_arr)
+    return None
