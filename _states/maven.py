@@ -13,10 +13,13 @@ def get(name,
         save_to=None,
         **kwargs):
     '''
-    Get latest artifact from Maven repository
+    Get latest artifact from Maven repository and saves it
+    to the direcotry defined in `save_to` or `name` or as
+    a file `save_as`.
 
     name:
-        The location of the file to save Maven artifact
+        Either some logical name (if `save_to` is defined) or
+        the directory to save the file of Maven artifact to.
     repo_url : https://repo1.maven.org/maven2/
         repository url
     group_id
@@ -30,7 +33,8 @@ def get(name,
     artifact_type : jar
         Optional. Artifact type (file extension) - default is `jar`.
     save_to:
-        Optional. Directory to save the artifact to. If defined then `name` is ignored.
+        Optional. Directory to save the artifact to. If defined then
+        `name` is ignored as location.
     save_as:
         Optional. Saves artifact as a specified file. Overrides `save_to`.
     '''
@@ -58,6 +62,8 @@ def get(name,
     if version is None:
         version = _get_latest_version( repo_url, group_id , artifact_id)
 
+    if artifact_type is None:
+        artifact_type = 'jar'
     save_as = mvnkwargs['save_as']
     if save_as is None or len(save_as) == 0:
         if save_to is None or len(save_to) == 0:
@@ -174,7 +180,8 @@ def _get_artifact_url(repo_url,
         return _get_last_snapshot(repo_url, group_id, version, artifact_id, classifier, artifact_type)
     else:
         group_url = '{}/{}'.format(repo_url.rstrip('/'),  group_id.replace('.','/'))
-        return '{}/{}/{}/{}-{}{}.{}'.format(group_url, artifact_id, version, artifact_id, version, classifier, artifact_type)
+        classifier_marker = '-{}'.format(classifier) if classifier is not None else ''
+        return '{}/{}/{}/{}-{}{}.{}'.format(group_url, artifact_id, version, artifact_id, version, classifier_marker, artifact_type)
 
 
 def _get_last_snapshot(repo_url, group_id, version, artifact_id, classifier, artifact_type):
@@ -187,7 +194,8 @@ def _get_last_snapshot(repo_url, group_id, version, artifact_id, classifier, art
     buildnumber = root.find('versioning/snapshot/buildNumber')
     marker = '{}-{}'.format(timestamp.text, buildnumber.text)
     snapshot_version = version.replace('SNAPSHOT', marker)
-    return '{}/{}/{}/{}-{}{}.{}'.format(group_url, artifact_id, version, artifact_id, snapshot_version, classifier, artifact_type)
+    classifier_marker = '-{}'.format(classifier) if classifier is not None else ''
+    return '{}/{}/{}/{}-{}{}.{}'.format(group_url, artifact_id, version, artifact_id, snapshot_version, classifier_marker, artifact_type)
 
 def _normalize_version(repo_url, group_id, artifact_id,version):
     if(version is None):
