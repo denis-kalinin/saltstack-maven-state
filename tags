@@ -1,0 +1,18 @@
+!_TAG_FILE_FORMAT	2	/extended format; --format=1 will not append ;" to lines/
+!_TAG_FILE_SORTED	1	/0=unsorted, 1=sorted, 2=foldcase/
+!_TAG_PROGRAM_AUTHOR	Darren Hiebert	/dhiebert@users.sourceforge.net/
+!_TAG_PROGRAM_NAME	Exuberant Ctags	//
+!_TAG_PROGRAM_URL	http://ctags.sourceforge.net	/official site/
+!_TAG_PROGRAM_VERSION	5.8	//
+ElementTree	_states/maven.py	/^from xml.etree import ElementTree$/;"	kind:namespace	line:4
+_get_artifact_url	_states/maven.py	/^def _get_artifact_url(repo_url,$/;"	kind:function	line:159
+_get_last_snapshot	_states/maven.py	/^def _get_last_snapshot(repo_url, group_id, version, artifact_id, classifier, artifact_type):$/;"	kind:function	line:187
+_get_latest_version	_states/maven.py	/^def _get_latest_version(repo_url, group_id, artifact_id):$/;"	kind:function	line:126
+_get_versions	_states/maven.py	/^def _get_versions(repo_url, group_id, artifact_id):$/;"	kind:function	line:147
+_normalize_version	_states/maven.py	/^def _normalize_version(repo_url, group_id, artifact_id,version):$/;"	kind:function	line:200
+_split_version_string	_states/maven.py	/^def _split_version_string(version, pattern):$/;"	kind:function	line:245
+get	_states/maven.py	/^def get(name,$/;"	kind:function	line:6
+maven.py	_states/maven.py	1;"	kind:file	line:1
+os	_states/maven.py	/^import os$/;"	kind:namespace	line:2
+re	_states/maven.py	/^import re$/;"	kind:namespace	line:3
+requests	_states/maven.py	/^import requests$/;"	kind:namespace	line:1
