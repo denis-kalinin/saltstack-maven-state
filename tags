@@ -5,14 +5,17 @@
 !_TAG_PROGRAM_URL	http://ctags.sourceforge.net	/official site/
 !_TAG_PROGRAM_VERSION	5.8	//
 ElementTree	_states/maven.py	/^from xml.etree import ElementTree$/;"	kind:namespace	line:4
-_get_artifact_url	_states/maven.py	/^def _get_artifact_url(repo_url,$/;"	kind:function	line:159
-_get_last_snapshot	_states/maven.py	/^def _get_last_snapshot(repo_url, group_id, version, artifact_id, classifier, artifact_type):$/;"	kind:function	line:187
-_get_latest_version	_states/maven.py	/^def _get_latest_version(repo_url, group_id, artifact_id):$/;"	kind:function	line:126
-_get_versions	_states/maven.py	/^def _get_versions(repo_url, group_id, artifact_id):$/;"	kind:function	line:147
-_normalize_version	_states/maven.py	/^def _normalize_version(repo_url, group_id, artifact_id,version):$/;"	kind:function	line:200
-_split_version_string	_states/maven.py	/^def _split_version_string(version, pattern):$/;"	kind:function	line:245
-get	_states/maven.py	/^def get(name,$/;"	kind:function	line:6
+RE_1	_states/maven.py	/^RE_1 = r'^(?P<lbrace>\\(|\\[)\\s*(?P<from>(\\d+(?:\\.\\d+){0,2})(?:-\\w*)?)?\\s*,\\s*(?P<to>(\\d+(?:\\.\\d+){0,2})(?:-\\w*)?)?\\s*(?P<rbrace>\\)|\\])$'$/;"	kind:variable	line:10
+RE_2	_states/maven.py	/^RE_2 = r'^(?P<major>\\d+)(?:\\.(?P<minor>\\d+)(?:\\.(?P<micro>\\d+))?)?(?:-(?P<qualifier>\\w+))?$'$/;"	kind:variable	line:11
+_get_artifact_url	_states/maven.py	/^def _get_artifact_url(repo_url,$/;"	kind:function	line:180
+_get_last_snapshot	_states/maven.py	/^def _get_last_snapshot(repo_url, group_id, version, artifact_id, classifier, artifact_type):$/;"	kind:function	line:210
+_get_latest_version	_states/maven.py	/^def _get_latest_version(repo_url, group_id, artifact_id):$/;"	kind:function	line:147
+_get_versions	_states/maven.py	/^def _get_versions(repo_url, group_id, artifact_id):$/;"	kind:function	line:168
+_normalize_version	_states/maven.py	/^def _normalize_version(repo_url, group_id, artifact_id, version):$/;"	kind:function	line:225
+_split_version_string	_states/maven.py	/^def _split_version_string(version, pattern):$/;"	kind:function	line:271
+_to_absolute_path	_states/maven.py	/^def _to_absolute_path(the_path):$/;"	kind:function	line:286
+get	_states/maven.py	/^def get(name,$/;"	kind:function	line:13
 maven.py	_states/maven.py	1;"	kind:file	line:1
-os	_states/maven.py	/^import os$/;"	kind:namespace	line:2
-re	_states/maven.py	/^import re$/;"	kind:namespace	line:3
-requests	_states/maven.py	/^import requests$/;"	kind:namespace	line:1
+os	_states/maven.py	/^import os$/;"	kind:namespace	line:5
+re	_states/maven.py	/^import re$/;"	kind:namespace	line:6
+requests	_states/maven.py	/^import requests$/;"	kind:namespace	line:7

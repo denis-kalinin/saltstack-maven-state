@@ -82,7 +82,7 @@ def get(name,
         save_as = '{}/{}.{}'.format(save_to.rstrip('/'), artifact_id, artifact_type)
 
     save_as = _to_absolute_path(save_as)
-
+    print('Artifcat will be saved as: {}'.format(save_as))
     artifact_url = _get_artifact_url(
         repo_url, group_id, artifact_id, version, classifier, artifact_type)
     current_state = __salt__['data.get'](artifact_url)
