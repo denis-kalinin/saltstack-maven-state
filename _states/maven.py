@@ -143,7 +143,7 @@ def get(name,
             else:
                 artifact_type = 'zip'
         __states__['archive.extracted'](
-            source=save_to, name=unarchive_dir, archive_format=artifact_type)
+            source=save_as, name=unarchive_dir, archive_format=artifact_type)
     if current_state is None:
         ret['changes'] = {
             'old': {},
