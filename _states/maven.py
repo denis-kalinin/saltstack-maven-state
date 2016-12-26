@@ -135,7 +135,14 @@ def get(name,
             unarchive_dir = os.path.dirname(save_as)
         else:
             unarchive_dir = _to_absolute_path(unarchive)
-        __states__['archive.extracted'](source=save_to, name=unarchive_dir)
+        if artifact_type != 'zip' or artifact_type != 'tar' or artifact_type != 'rar':
+            if artifact_type == 'tar.gz':
+                artifact_type = 'tar'
+            elif artifact_type == 'jar':
+                artifact_type = 'zip'
+            else:
+                artifact_type = 'zip'
+        __states__['archive.extracted'](source=save_to, name=unarchive_dir, archive_format=artifact_type)
     if current_state is None:
         ret['changes'] = {
             'old': {},
