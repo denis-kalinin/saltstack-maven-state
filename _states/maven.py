@@ -18,6 +18,7 @@ def get(name,
         classifier='',
         artifact_type='jar',
         save_to=None,
+        unarchive=False,
         **kwargs):
     '''
     Get latest artifact from Maven repository and saves it
@@ -44,6 +45,9 @@ def get(name,
         `name` is ignored as location.
     save_as:
         Optional. Saves artifact as a specified file. Overrides `save_to`.
+    unarchive:
+        Optional. Unarchive to the directory specified.
+        If `True` - extract to directory with archive.
     '''
     ret = {
         'name': name,
@@ -111,7 +115,9 @@ def get(name,
 
     # Finally, make the actual change and return the result.
     artifact_file_operation = __states__['file.managed'](
-        name=save_as, source=artifact_url, source_hash='{}.md5'.format(artifact_url))
+        name=save_as, source=artifact_url, source_hash='{}.md5'.format(artifact_url),
+        makedirs=True)
+
     if artifact_file_operation['result'] is False:
         ret['result'] = False
         #raise salt.exceptions.SaltInvocationError(
@@ -123,6 +129,13 @@ def get(name,
     __salt__['data.update'](artifact_url, save_as)
     ret['comment'] = 'The state of "{0}" was changed! {1} is loaded to {2}'.format(
         name, artifact_url, save_as)
+    # unarchive
+    if unarchive is not False:
+        if unarchive is True:
+            unarchive_dir = os.path.dirname(save_as)
+        else:
+            unarchive_dir = _to_absolute_path(unarchive)
+        __states__['archive.extracted'](source=save_to, name=unarchive_dir)
     if current_state is None:
         ret['changes'] = {
             'old': {},
