@@ -4,7 +4,10 @@ Gets artifact from Maven repository
 from xml.etree import ElementTree
 import os
 import re
+import urllib
+import urlparse
 import requests
+
 
 # https://regex101.com/r/O5WKkh/2
 RE_1 = r'^(?P<lbrace>\(|\[)\s*(?P<from>(\d+(?:\.\d+){0,2})(?:-\w*)?)?\s*,\s*(?P<to>(\d+(?:\.\d+){0,2})(?:-\w*)?)?\s*(?P<rbrace>\)|\])$'
@@ -142,8 +145,9 @@ def get(name,
                 artifact_type = 'zip'
             else:
                 artifact_type = 'zip'
+        archive = urlparse.urljoin('file:', urllib.pathname2url(save_as))        
         __states__['archive.extracted'](
-            source=save_as, name=unarchive_dir, archive_format=artifact_type, skip_verify=True)
+            source=archive, name=unarchive_dir, archive_format=artifact_type, skip_verify=True)
     if current_state is None:
         ret['changes'] = {
             'old': {},
