@@ -4,8 +4,8 @@ Gets artifact from Maven repository
 from xml.etree import ElementTree
 import os
 import re
-import urllib
-import urlparse
+#import urllib
+#import urlparse
 import requests
 
 
@@ -138,16 +138,25 @@ def get(name,
             unarchive_dir = os.path.dirname(save_as)
         else:
             unarchive_dir = _to_absolute_path(unarchive)
-        if artifact_type != 'zip' or artifact_type != 'tar' or artifact_type != 'rar':
-            if artifact_type == 'tar.gz':
-                artifact_type = 'tar'
-            elif artifact_type == 'jar':
-                artifact_type = 'zip'
-            else:
-                artifact_type = 'zip'
-        archive = urlparse.urljoin('file:', urllib.pathname2url(save_as))        
-        __states__['archive.extracted'](
-            source=archive, name=unarchive_dir, archive_format=artifact_type, skip_verify=True)
+        if artifact_type == 'tar':
+            __salt__['archive.tar']('xf', save_as, dest=unarchive_dir)
+        elif artifact_type == 'tar.bz2':
+            __salt__['archive.tar']('xjf', save_as, dest=unarchive_dir)
+        elif artifact_type == 'tar.gz':
+            __salt__['archive.tar']('xzf', save_as, dest=unarchive_dir)
+        else:
+            __salt__['archive.unzip'](save_as, unarchive_dir)
+
+#        if artifact_type != 'zip' or artifact_type != 'tar' or artifact_type != 'rar':
+#            if artifact_type == 'tar.gz':
+#                artifact_type = 'tar'
+#            elif artifact_type == 'jar':
+#                artifact_type = 'zip'
+#            else:
+#                artifact_type = 'zip'
+#        archive = urlparse.urljoin('file:', urllib.pathname2url(save_as))        
+#        __states__['archive.extracted'](
+#            source=archive, name=unarchive_dir, archive_format=artifact_type, skip_verify=True)
     if current_state is None:
         ret['changes'] = {
             'old': {},
