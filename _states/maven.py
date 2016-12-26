@@ -4,8 +4,6 @@ Gets artifact from Maven repository
 from xml.etree import ElementTree
 import os
 import re
-#import urllib
-#import urlparse
 import requests
 
 
@@ -147,16 +145,6 @@ def get(name,
         else:
             __salt__['archive.unzip'](save_as, unarchive_dir)
 
-#        if artifact_type != 'zip' or artifact_type != 'tar' or artifact_type != 'rar':
-#            if artifact_type == 'tar.gz':
-#                artifact_type = 'tar'
-#            elif artifact_type == 'jar':
-#                artifact_type = 'zip'
-#            else:
-#                artifact_type = 'zip'
-#        archive = urlparse.urljoin('file:', urllib.pathname2url(save_as))        
-#        __states__['archive.extracted'](
-#            source=archive, name=unarchive_dir, archive_format=artifact_type, skip_verify=True)
     if current_state is None:
         ret['changes'] = {
             'old': {},
